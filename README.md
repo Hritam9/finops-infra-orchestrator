@@ -3,6 +3,13 @@ A GitHub Actions → Python decision script → Terraform pipeline that right-si
 
 # Intelligent FinOps Infrastructure Orchestrator
 
+<p align="center">
+  <img src="docs/architecture.png" width="650">
+</p>
+
+
+# Intelligent FinOps Infrastructure Orchestrator
+
 Right-sizes Azure capacity from a simple demand forecast using **Python (decision)** + **Terraform (provisioning)** + **GitHub Actions (CI/CD)**.
 
 ## Architecture
