@@ -1,0 +1,33 @@
+name: apply
+on:
+  workflow_dispatch: {}
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: production   # set with required reviewers for safety
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Terraform Init
+        working-directory: tf
+        env:
+          ARM_CLIENT_ID:     ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID:     ${{ secrets.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+        run: |
+          terraform init -backend-config=backend.hcl
+
+      - name: Terraform Apply (auto-approve after manual env approval)
+        working-directory: tf
+        env:
+          ARM_CLIENT_ID:     ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID:     ${{ secrets.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+        run: |
+          terraform apply -input=false -auto-approve
