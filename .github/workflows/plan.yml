@@ -1,0 +1,63 @@
+name: plan
+on:
+  workflow_dispatch:
+    inputs:
+      demand_file:
+        description: 'CSV path for demand'
+        required: false
+        default: 'decision/demand_sample.csv'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Decide capacity
+        run: |
+          pip install -r decision/requirements.txt
+          python decision/decide_capacity.py
+        env:
+          DEMAND_FILE: ${{ github.event.inputs.demand_file }}
+          MIN_CAP: "1"
+          MAX_CAP: "10"
+          UNITS_PER_INSTANCE: "25"
+          CHANGE_THRESHOLD: "1"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Terraform Init
+        working-directory: tf
+        env:
+          ARM_CLIENT_ID:     ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID:     ${{ secrets.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+        run: |
+          terraform init -backend-config=backend.hcl
+
+      - name: Terraform Plan
+        working-directory: tf
+        env:
+          ARM_CLIENT_ID:     ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID:     ${{ secrets.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+        run: |
+          terraform plan -input=false -out=tfplan
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: tf/tfplan
